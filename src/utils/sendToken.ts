@@ -45,10 +45,6 @@ export const sendToken = ({
       ...cookieOptions,
       maxAge: 15 * 60, // seconds
     });
-
-    if (message) {
-      reply.send({ message });
-    }
   } else {
     const response = res as ExpressResponse;
 
@@ -61,9 +57,5 @@ export const sendToken = ({
       ...cookieOptions,
       maxAge: 15 * 60 * 1000,
     });
-
-    if (message) {
-      response.json({ message });
-    }
   }
 };
