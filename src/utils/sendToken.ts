@@ -1,26 +1,69 @@
-import { Response } from "express";
+import type { Response as ExpressResponse } from "express";
+import type { FastifyReply } from "fastify";
 
-export const sendToken = (
-  res: Response,
-  accessToken: string,
-  refreshToken: string,
-  message?: string
-) => {
+type ReplyWithCookies = FastifyReply & {
+  setCookie: (
+    name: string,
+    value: string,
+    options?: Record<string, any>
+  ) => void;
+};
+
+type SendTokenOptions = {
+  res: ExpressResponse | ReplyWithCookies;
+  accessToken: string;
+  refreshToken: string;
+  message?: string;
+};
+
+export const sendToken = ({
+  res,
+  accessToken,
+  refreshToken,
+  message,
+}: SendTokenOptions) => {
   const isDev = process.env.NODE_ENV === "development";
 
-  res.cookie("refreshToken", refreshToken, {
+  const cookieOptions = {
     httpOnly: true,
     secure: !isDev,
-    sameSite: isDev ? "lax" : "none",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+    sameSite: isDev ? "lax" : ("none" as "lax" | "none"),
+    path: "/",
+  };
 
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: !isDev,
-    sameSite: isDev ? "lax" : "none",
-    maxAge: 15 * 60 * 1000,
-  });
+  const isFastify = typeof (res as ReplyWithCookies).setCookie === "function";
 
-  if (message) res.json({ message });
+  if (isFastify) {
+    const reply = res as ReplyWithCookies;
+
+    reply.setCookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60, // seconds for Fastify
+    });
+
+    reply.setCookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60, // seconds
+    });
+
+    if (message) {
+      reply.send({ message });
+    }
+  } else {
+    const response = res as ExpressResponse;
+
+    response.cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    response.cookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000,
+    });
+
+    if (message) {
+      response.json({ message });
+    }
+  }
 };
