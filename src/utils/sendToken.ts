@@ -20,8 +20,7 @@ export const sendToken = ({
   res,
   accessToken,
   refreshToken,
-  message,
-}: SendTokenOptions) => {
+}: Omit<SendTokenOptions, "message">) => {
   const isDev = process.env.NODE_ENV === "development";
 
   const cookieOptions = {
@@ -35,24 +34,20 @@ export const sendToken = ({
 
   if (isFastify) {
     const reply = res as ReplyWithCookies;
-
     reply.setCookie("refreshToken", refreshToken, {
       ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60, // seconds for Fastify
+      maxAge: 7 * 24 * 60 * 60, // 7 days
     });
-
     reply.setCookie("accessToken", accessToken, {
       ...cookieOptions,
-      maxAge: 15 * 60, // seconds
+      maxAge: 15 * 60, // 15 minutes
     });
   } else {
     const response = res as ExpressResponse;
-
     response.cookie("refreshToken", refreshToken, {
       ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-
     response.cookie("accessToken", accessToken, {
       ...cookieOptions,
       maxAge: 15 * 60 * 1000,
